@@ -1,14 +1,6 @@
-package main
+package stringUtilities
 
 import "strings"
-
-type StringUtilities struct {
-}
-
-func GetStringUtilities() StringUtilities {
-	var su StringUtilities
-	return su
-}
 
 /**
  * Takes a string with '%s' placeholders and replaces them with provided values.
@@ -18,7 +10,7 @@ func GetStringUtilities() StringUtilities {
  * @param {...string[]} values - The ordered replacement text
  * @returns {string}
  */
-func (su *StringUtilities) format(template string, values ...string) string {
+func Format(template string, values ...string) string {
 
 	for _, replacementString := range values {
 		template = strings.Replace(template, "%s", replacementString,1)
@@ -36,7 +28,7 @@ func (su *StringUtilities) format(template string, values ...string) string {
  * @param {string[]} searchStrings - The array of values to search for
  * @returns {boolean}
  */
-func (su *StringUtilities) containsAny(text string, searchStrings []string) bool {
+func ContainsAny(text string, searchStrings []string) bool {
 
 	for _, searchValue := range searchStrings {
 		if strings.Contains(text, searchValue) {

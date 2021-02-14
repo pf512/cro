@@ -3,6 +3,8 @@
 package main
 
 import (
+	"awesomeProject/i18n"
+	"awesomeProject/stringUtilities"
 	"regexp"
 	"strconv"
 	"strings"
@@ -10,24 +12,24 @@ import (
 
 type ExpressionDescriptor struct {
 
-	locales map[string]Locale
+	locales map[string]i18n.Locale
 	specialCharacters []string
 
-	expression string
+	expression      string
 	expressionParts []string
-	options Options
-	i18n Locale
+	options         Options
+	i18n            i18n.Locale
 }
 
 func GetExpressionDescriptor() ExpressionDescriptor {
 	var ed ExpressionDescriptor
-	var enLocale enLocaleLoader
+	var enLocale i18n.EnLocaleLoader
 	ed.initialize(enLocale)
 
 	return ed
 }
 
-func (ed *ExpressionDescriptor) initialize(localesLoader LocaleLoader) {
+func (ed *ExpressionDescriptor) initialize(localesLoader i18n.LocaleLoader) {
 	ed.specialCharacters = []string{"/", "-", ",", "*"}
 
 	throwExceptionOnParseError := true
@@ -45,10 +47,12 @@ func (ed *ExpressionDescriptor) initialize(localesLoader LocaleLoader) {
 
 	ed.options = options
 
-	ed.locales = make(map[string]Locale)
+	ed.locales = make(map[string]i18n.Locale)
 
 	// Load locales
-	localesLoader.load(ed.locales)
+	localesLoader.Load(ed.locales)
+
+	ed.constructor("")
 }
 
 func (ed *ExpressionDescriptor) constructor(expression string) {
@@ -64,11 +68,41 @@ func (ed *ExpressionDescriptor) constructor(expression string) {
 
 	if ed.options.use24HourTimeFormat == false {
 		// if use24HourTimeFormat not specified, set based on locale default
-		ed.options.use24HourTimeFormat = ed.i18n.use24HourTimeFormatByDefault()
+		ed.options.use24HourTimeFormat = ed.i18n.Use24HourTimeFormatByDefault()
 	}
 
+}
+
+func (ed *ExpressionDescriptor) Language(language string) {
+
+	ed.options.locale = language
+
+	var localesLoader i18n.LocaleLoader
+
+	if language == "es" {
+		localesLoader = i18n.EsLocaleLoader{}
+	} else {
+		return
+	}
+
+	// Load locales
+	localesLoader.Load(ed.locales)
+
+	if _, ok := ed.locales[ed.options.locale]; ok {
+		ed.i18n = ed.locales[ed.options.locale]
+	} else {
+		// fall back to English
+		println("Locale "+ ed.options.locale +" could not be found; falling back to 'en'")
+		ed.i18n = ed.locales["en"]
+	}
+
+	if ed.options.use24HourTimeFormat == false {
+		// if use24HourTimeFormat not specified, set based on locale default
+		ed.options.use24HourTimeFormat = ed.i18n.Use24HourTimeFormatByDefault()
+	}
 
 }
+
 
 func (ed *ExpressionDescriptor) setVerbose(verbose bool) {
 	ed.options.verbose = verbose
@@ -105,7 +139,7 @@ func (ed *ExpressionDescriptor) toString(expression string) string {
 		return ""
 	}
 
-	ed.constructor(expression)
+	ed.expression= expression
 
 	return ed.getFullDescription()
 
@@ -135,7 +169,7 @@ func (ed *ExpressionDescriptor) getFullDescription() string {
 
 	/*catch (ex) {
 		if (!this.options.throwExceptionOnParseError) {
-			description = this.i18n.anErrorOccuredWhenGeneratingTheExpressionD();
+			description = this.AnErrorOccuredWhenGeneratingTheExpressionD();
 		} else {
 			throw `${ex}`;
 		}
@@ -152,19 +186,18 @@ func (ed *ExpressionDescriptor) getTimeOfDayDescription() string {
 
 	description := ""
 
-	stringUtilities := GetStringUtilities()
 	// handle special cases first
-	if !stringUtilities.containsAny(minuteExpression, ed.specialCharacters) && !stringUtilities.containsAny(hourExpression, ed.specialCharacters) && !stringUtilities.containsAny(secondsExpression, ed.specialCharacters) {
+	if !stringUtilities.ContainsAny(minuteExpression, ed.specialCharacters) && !stringUtilities.ContainsAny(hourExpression, ed.specialCharacters) && !stringUtilities.ContainsAny(secondsExpression, ed.specialCharacters) {
 		// specific time of day (i.e. 10 14)
-		description += ed.i18n.atSpace() + ed.formatTime(hourExpression, minuteExpression, secondsExpression)
-	} else if secondsExpression =="" && strings.Index(minuteExpression,"-") > -1 && !(strings.Index(minuteExpression,",") > -1) && !(strings.Index(minuteExpression,"/") > -1) && !stringUtilities.containsAny(hourExpression, ed.specialCharacters) {
+		description += ed.i18n.AtSpace() + ed.formatTime(hourExpression, minuteExpression, secondsExpression)
+	} else if secondsExpression =="" && strings.Index(minuteExpression,"-") > -1 && !(strings.Index(minuteExpression,",") > -1) && !(strings.Index(minuteExpression,"/") > -1) && !stringUtilities.ContainsAny(hourExpression, ed.specialCharacters) {
 		// minute range in single hour (i.e. 0-10 11)
 		minuteParts := strings.Split(minuteExpression,"-")
-		description += stringUtilities.format(ed.i18n.everyMinuteBetweenX0AndX1(), ed.formatTime(hourExpression, minuteParts[0], ""), ed.formatTime(hourExpression, minuteParts[1], ""))
-	} else if secondsExpression == "" && strings.Index(hourExpression,",") > -1 && strings.Index(hourExpression,"-") == -1 && strings.Index(hourExpression,"/") == -1 && !stringUtilities.containsAny(minuteExpression, ed.specialCharacters) {
+		description += stringUtilities.Format(ed.i18n.EveryMinuteBetweenX0AndX1(), ed.formatTime(hourExpression, minuteParts[0], ""), ed.formatTime(hourExpression, minuteParts[1], ""))
+	} else if secondsExpression == "" && strings.Index(hourExpression,",") > -1 && strings.Index(hourExpression,"-") == -1 && strings.Index(hourExpression,"/") == -1 && !stringUtilities.ContainsAny(minuteExpression, ed.specialCharacters) {
 		// hours list with single minute (i.e. 30 6,14,16)
 		hourParts := strings.Split(hourExpression, ",")
-		description += ed.i18n.at()
+		description += ed.i18n.At()
 
 		for i := 0; i < len(hourParts); i++ {
 			description += " ";
@@ -175,7 +208,7 @@ func (ed *ExpressionDescriptor) getTimeOfDayDescription() string {
 			}
 
 			if (i == len(hourParts) - 2) {
-			description += ed.i18n.spaceAnd()
+			description += ed.i18n.SpaceAnd()
 			}
 		}
 
@@ -211,28 +244,27 @@ func (ed *ExpressionDescriptor) getTimeOfDayDescription() string {
 
 
 func (ed *ExpressionDescriptor) getSecondsDescription() string {
-	var stringUtilities StringUtilities
-
+	
 	description := ed.getSegmentDescription(
 		ed.expressionParts[0],
-		ed.i18n.everySecond(),
+		ed.i18n.EverySecond(),
 		func(s string) string { return s },
-		func(s string) string { return stringUtilities.format(ed.i18n.everyX0Seconds(), s)},
-		func(s string) string { return ed.i18n.secondsX0ThroughX1PastTheMinute()},
+		func(s string) string { return stringUtilities.Format(ed.i18n.EveryX0Seconds(), s)},
+		func(s string) string { return ed.i18n.SecondsX0ThroughX1PastTheMinute()},
 		func(s string) string { if s == "0" {
 				return ""
 			}
 
 			tmp, _ := strconv.Atoi(s)
 			if tmp < 20 {
-				return ed.i18n.atX0SecondsPastTheMinute()
+				return ed.i18n.AtX0SecondsPastTheMinute()
 			}
 
-			if ed.i18n.atX0SecondsPastTheMinuteGt20() != "" {
-				return ed.i18n.atX0SecondsPastTheMinuteGt20()
+			if ed.i18n.AtX0SecondsPastTheMinuteGt20() != "" {
+				return ed.i18n.AtX0SecondsPastTheMinuteGt20()
 			}
 
-			return ed.i18n.atX0SecondsPastTheMinute()
+			return ed.i18n.AtX0SecondsPastTheMinute()
 		},
 	)
 
@@ -240,31 +272,30 @@ func (ed *ExpressionDescriptor) getSecondsDescription() string {
 }
 
 func (ed *ExpressionDescriptor) getMinutesDescription() string {
-	var stringUtilities StringUtilities
-
+	
 	secondsExpression := ed.expressionParts[0]
 	hourExpression := ed.expressionParts[2]
 
 	description := ed.getSegmentDescription(
 		ed.expressionParts[1],
-		ed.i18n.everyMinute(),
+		ed.i18n.EveryMinute(),
 		func(s string) string { return s },
-		func(s string) string { return stringUtilities.format(ed.i18n.everyX0Minutes(), s)},
-		func(s string) string { return ed.i18n.minutesX0ThroughX1PastTheHour()},
+		func(s string) string { return stringUtilities.Format(ed.i18n.EveryX0Minutes(), s)},
+		func(s string) string { return ed.i18n.MinutesX0ThroughX1PastTheHour()},
 		func(s string) string { if s == "0" && strings.Index(hourExpression,"/") == -1 && secondsExpression == "" {
-				return ed.i18n.everyHour()
+				return ed.i18n.EveryHour()
 			}
 
 			tmp, _ := strconv.Atoi(s)
 			if tmp < 20 {
-				return ed.i18n.atX0MinutesPastTheHour()
+				return ed.i18n.AtX0MinutesPastTheHour()
 			}
 
-			if ed.i18n.atX0MinutesPastTheHourGt20() != "" {
-				return ed.i18n.atX0MinutesPastTheHourGt20()
+			if ed.i18n.AtX0MinutesPastTheHourGt20() != "" {
+				return ed.i18n.AtX0MinutesPastTheHourGt20()
 			}
 
-			return ed.i18n.atX0MinutesPastTheHour()
+			return ed.i18n.AtX0MinutesPastTheHour()
 		},
 	)
 
@@ -272,25 +303,23 @@ func (ed *ExpressionDescriptor) getMinutesDescription() string {
 }
 
 func (ed *ExpressionDescriptor) getHoursDescription() string {
-	var stringUtilities StringUtilities
-
+	
 	expression := ed.expressionParts[2]
 	description := ed.getSegmentDescription(
 		expression,
-		ed.i18n.everyHour(),
+		ed.i18n.EveryHour(),
 		func(s string) string { return ed.formatTime(s, "0", "")},
-		func(s string) string { return stringUtilities.format(ed.i18n.everyX0Hours(), s)},
-		func(s string) string { return ed.i18n.betweenX0AndX1()},
-		func(s string) string { return ed.i18n.atX0()},
+		func(s string) string { return stringUtilities.Format(ed.i18n.EveryX0Hours(), s)},
+		func(s string) string { return ed.i18n.BetweenX0AndX1()},
+		func(s string) string { return ed.i18n.AtX0()},
 	)
 
 	return description
 }
 
 func (ed *ExpressionDescriptor) getDayOfWeekDescription() string {
-	var stringUtilities StringUtilities
-
-	daysOfWeekNames := ed.i18n.daysOfTheWeek()
+	
+	daysOfWeekNames := ed.i18n.DaysOfTheWeek()
 
 	description := ""
 	if ed.expressionParts[5] == "*" {
@@ -301,7 +330,7 @@ func (ed *ExpressionDescriptor) getDayOfWeekDescription() string {
 	} else {
 		description = ed.getSegmentDescription(
 			ed.expressionParts[5],
-			ed.i18n.commaEveryDay(),
+			ed.i18n.CommaEveryDay(),
 			func(s string) string {
 				exp := s
 				if strings.Index(s, "#") > -1 {
@@ -319,10 +348,10 @@ func (ed *ExpressionDescriptor) getDayOfWeekDescription() string {
 					return ""
 				}
 
-				return stringUtilities.format(ed.i18n.commaEveryX0DaysOfTheWeek(), s);
+				return stringUtilities.Format(ed.i18n.CommaEveryX0DaysOfTheWeek(), s);
 
 			},
-			func(s string) string { return ed.i18n.commaX0ThroughX1()},
+			func(s string) string { return ed.i18n.CommaX0ThroughX1()},
 			func(s string) string {
 				format := ""
 				if strings.Index(s,"#") > -1 {
@@ -330,33 +359,33 @@ func (ed *ExpressionDescriptor) getDayOfWeekDescription() string {
 					dayOfWeekOfMonthDescription := ""
 					switch dayOfWeekOfMonthNumber {
 						case "1":
-							dayOfWeekOfMonthDescription = ed.i18n.first()
+							dayOfWeekOfMonthDescription = ed.i18n.First()
 							break
 						case "2":
-							dayOfWeekOfMonthDescription = ed.i18n.second()
+							dayOfWeekOfMonthDescription = ed.i18n.Second()
 							break
 						case "3":
-							dayOfWeekOfMonthDescription = ed.i18n.third()
+							dayOfWeekOfMonthDescription = ed.i18n.Third()
 							break
 						case "4":
-							dayOfWeekOfMonthDescription = ed.i18n.fourth()
+							dayOfWeekOfMonthDescription = ed.i18n.Fourth()
 							break
 						case "5":
-							dayOfWeekOfMonthDescription = ed.i18n.fifth()
+							dayOfWeekOfMonthDescription = ed.i18n.Fifth()
 							break
 					}
 
-					format = ed.i18n.commaOnThe() + dayOfWeekOfMonthDescription + ed.i18n.spaceX0OfTheMonth()
+					format = ed.i18n.CommaOnThe() + dayOfWeekOfMonthDescription + ed.i18n.SpaceX0OfTheMonth()
 				} else if strings.Index(s,"L") > -1 {
-					format = ed.i18n.commaOnTheLastX0OfTheMonth()
+					format = ed.i18n.CommaOnTheLastX0OfTheMonth()
 				} else {
 					// If both DOM and DOW are specified, the cron will execute at either time.
 					domSpecified := ed.expressionParts[3] != "*"
 
 					if domSpecified {
-						format = ed.i18n.commaAndOnX0()
+						format = ed.i18n.CommaAndOnX0()
 					} else {
-						format = ed.i18n.commaOnlyOnX0()
+						format = ed.i18n.CommaOnlyOnX0()
 					}
 				}
 				return format
@@ -368,9 +397,8 @@ func (ed *ExpressionDescriptor) getDayOfWeekDescription() string {
 }
 
 func (ed *ExpressionDescriptor) getMonthDescription() string {
-	var stringUtilities StringUtilities
-
-	monthNames := ed.i18n.monthsOfTheYear()
+	
+	monthNames := ed.i18n.MonthsOfTheYear()
 
 	description	:= ed.getSegmentDescription(
 		ed.expressionParts[4],
@@ -385,21 +413,21 @@ func (ed *ExpressionDescriptor) getMonthDescription() string {
 				// rather than "every 1 months" just return empty string
 				return ""
 			} else {
-				return stringUtilities.format(ed.i18n.commaEveryX0Months(), s)
+				return stringUtilities.Format(ed.i18n.CommaEveryX0Months(), s)
 			}
 		},
 		func(s string) string {
-			if ed.i18n.commaMonthX0ThroughMonthX1() != "" {
-				return ed.i18n.commaMonthX0ThroughMonthX1()
+			if ed.i18n.CommaMonthX0ThroughMonthX1() != "" {
+				return ed.i18n.CommaMonthX0ThroughMonthX1()
 			}
 
-			return ed.i18n.commaX0ThroughX1()
+			return ed.i18n.CommaX0ThroughX1()
 		},
 		func(s string) string {
-			if ed.i18n.commaOnlyInMonthX0() != "" {
-				return ed.i18n.commaOnlyInMonthX0()
+			if ed.i18n.CommaOnlyInMonthX0() != "" {
+				return ed.i18n.CommaOnlyInMonthX0()
 			}
-			return ed.i18n.commaOnlyInX0()
+			return ed.i18n.CommaOnlyInX0()
 		},
 	)
 
@@ -407,19 +435,18 @@ func (ed *ExpressionDescriptor) getMonthDescription() string {
 }
 
 func (ed *ExpressionDescriptor) getDayOfMonthDescription() string {
-	var stringUtilities StringUtilities
-
+	
 	description := ""
 	expression := ed.expressionParts[3]
 
 	switch expression {
 
 		case "L":
-			description = ed.i18n.commaOnTheLastDayOfTheMonth()
+			description = ed.i18n.CommaOnTheLastDayOfTheMonth()
 			break
 		case "WL":
 		case "LW":
-			description = ed.i18n.commaOnTheLastWeekdayOfTheMonth()
+			description = ed.i18n.CommaOnTheLastWeekdayOfTheMonth()
 			break
 		default:
 			re := regexp.MustCompile("(\\d{1,2}W)|(W\\d{1,2})")
@@ -431,12 +458,12 @@ func (ed *ExpressionDescriptor) getDayOfMonthDescription() string {
 
 				var dayString string
 				if dayNumber == 1 {
-					dayString = ed.i18n.firstWeekday()
+					dayString = ed.i18n.FirstWeekday()
 				} else {
-					dayString = stringUtilities.format(ed.i18n.weekdayNearestDayX0(), strconv.Itoa(dayNumber))
+					dayString = stringUtilities.Format(ed.i18n.WeekdayNearestDayX0(), strconv.Itoa(dayNumber))
 				}
 
-				description = stringUtilities.format(ed.i18n.commaOnTheX0OfTheMonth(), dayString)
+				description = stringUtilities.Format(ed.i18n.CommaOnTheX0OfTheMonth(), dayString)
 				break
 			} else {
 				// Handle "last day offset" (i.e. L-5:  "5 days before the last day of the month")
@@ -444,7 +471,7 @@ func (ed *ExpressionDescriptor) getDayOfMonthDescription() string {
 				lastDayOffSetMatches := re.FindAllString(expression, -1)
 				if len(lastDayOffSetMatches) > 0 {
 					offSetDays := lastDayOffSetMatches[1]
-					description = stringUtilities.format(ed.i18n.commaDaysBeforeTheLastDayOfTheMonth(), offSetDays)
+					description = stringUtilities.Format(ed.i18n.CommaDaysBeforeTheLastDayOfTheMonth(), offSetDays)
 					break
 				} else if expression == "*" && ed.expressionParts[5] != "*" {
 				// * dayOfMonth and dayOfWeek specified so use dayOfWeek verbiage instead
@@ -452,27 +479,27 @@ func (ed *ExpressionDescriptor) getDayOfMonthDescription() string {
 				} else {
 				description = ed.getSegmentDescription(
 					expression,
-					ed.i18n.commaEveryDay(),
+					ed.i18n.CommaEveryDay(),
 					func(s string) string {
 						if s == "L" {
-							return ed.i18n.lastDay()
-						} else if ed.i18n.dayX0() != "" {
-							return stringUtilities.format(ed.i18n.dayX0(), s)
+							return ed.i18n.LastDay()
+						} else if ed.i18n.DayX0() != "" {
+							return stringUtilities.Format(ed.i18n.DayX0(), s)
 						}
 
 						return s
 					},
 					func(s string) string {
 						if s == "1" {
-							return ed.i18n.commaEveryDay()
+							return ed.i18n.CommaEveryDay()
 						}
-						return ed.i18n.commaEveryX0Days()
+						return ed.i18n.CommaEveryX0Days()
 					},
 					func(s string) string {
-						return ed.i18n.commaBetweenDayX0AndX1OfTheMonth()
+						return ed.i18n.CommaBetweenDayX0AndX1OfTheMonth()
 					},
 					func(s string) string {
-						return ed.i18n.commaOnDayX0OfTheMonth()
+						return ed.i18n.CommaOnDayX0OfTheMonth()
 					},
 				)
 			}
@@ -484,8 +511,7 @@ func (ed *ExpressionDescriptor) getDayOfMonthDescription() string {
 }
 
 func (ed *ExpressionDescriptor) getYearDescription() string {
-	var stringUtilities StringUtilities
-
+	
 	description := ed.getSegmentDescription(
 		ed.expressionParts[6],
 		"",
@@ -499,19 +525,19 @@ func (ed *ExpressionDescriptor) getYearDescription() string {
 			return s
 		},
 		func(s string) string {
-			return stringUtilities.format(ed.i18n.commaEveryX0Years(), s)
+			return stringUtilities.Format(ed.i18n.CommaEveryX0Years(), s)
 		},
 		func(s string) string {
-			if ed.i18n.commaYearX0ThroughYearX1() != "" {
-				return ed.i18n.commaYearX0ThroughYearX1()
+			if ed.i18n.CommaYearX0ThroughYearX1() != "" {
+				return ed.i18n.CommaYearX0ThroughYearX1()
 			}
-			return ed.i18n.commaX0ThroughX1()
+			return ed.i18n.CommaX0ThroughX1()
 		},
 		func(s string) string {
-			if ed.i18n.commaOnlyInYearX0() != "" {
-				return ed.i18n.commaOnlyInYearX0()
+			if ed.i18n.CommaOnlyInYearX0() != "" {
+				return ed.i18n.CommaOnlyInYearX0()
 			}
- 			return ed.i18n.commaOnlyInX0()
+ 			return ed.i18n.CommaOnlyInX0()
 		},
 	)
 
@@ -527,8 +553,7 @@ func (ed *ExpressionDescriptor) getSegmentDescription(expression string,
 	getRangeDescriptionFormat stringFunction,
 	getDescriptionFormat stringFunction,
 	) string {
-	var stringUtilities StringUtilities
-
+	
 	description := ""
 	doesExpressionContainIncrement := strings.Index(expression,"/") > -1
 	doesExpressionContainRange := strings.Index(expression, "-") > -1
@@ -542,7 +567,7 @@ func (ed *ExpressionDescriptor) getSegmentDescription(expression string,
 		description = allDescription
 	} else if (!doesExpressionContainIncrement && !doesExpressionContainRange && !doesExpressionContainMultipleValues) {
 		// Simple
-		description = stringUtilities.format(getDescriptionFormat(expression), getSingleItemDescription(expression))
+		description = stringUtilities.Format(getDescriptionFormat(expression), getSingleItemDescription(expression))
 	} else if (doesExpressionContainMultipleValues) {
 		// Multiple Values
 
@@ -559,7 +584,7 @@ func (ed *ExpressionDescriptor) getSegmentDescription(expression string,
 			}
 
 			if i > 0 && len(segments) > 1 && (i == len(segments) - 1 || len(segments) == 2) {
-				descriptionContent += ed.i18n.spaceAnd()+" "
+				descriptionContent += ed.i18n.SpaceAnd()+" "
 			}
 
 			if strings.Index(segments[i],"/") > -1 || strings.Index(segments[i],"-") > -1 {
@@ -574,7 +599,7 @@ func (ed *ExpressionDescriptor) getSegmentDescription(expression string,
 						allDescription,
 						getSingleItemDescription,
 						getIncrementDescriptionFormat,
-						func (s string) string { return ed.i18n.commaX0ThroughX1() },
+						func (s string) string { return ed.i18n.CommaX0ThroughX1() },
 						getDescriptionFormat,
 					)
 				} else {
@@ -609,7 +634,7 @@ func (ed *ExpressionDescriptor) getSegmentDescription(expression string,
 		}
 
 		if !doesExpressionContainIncrement {
-			description = stringUtilities.format(getDescriptionFormat(expression), descriptionContent)
+			description = stringUtilities.Format(getDescriptionFormat(expression), descriptionContent)
 		} else {
 			description = descriptionContent
 		}
@@ -617,7 +642,7 @@ func (ed *ExpressionDescriptor) getSegmentDescription(expression string,
 		// Increment
 
 		segments := strings.Split(expression,"/")
-		description = stringUtilities.format(getIncrementDescriptionFormat(segments[1]), segments[1])
+		description = stringUtilities.Format(getIncrementDescriptionFormat(segments[1]), segments[1])
 
 		if strings.Index(segments[0],"-") > -1 {
 		// Range with Increment (ex: 2-59/3 )
@@ -634,7 +659,7 @@ func (ed *ExpressionDescriptor) getSegmentDescription(expression string,
 
 		description += rangeSegmentDescription
 	} else if strings.Index(segments[0],"*") == -1 {
-		rangeItemDescription := stringUtilities.format(
+		rangeItemDescription := stringUtilities.Format(
 		getDescriptionFormat(segments[0]),
 		getSingleItemDescription(segments[0]),
 		)
@@ -642,7 +667,7 @@ func (ed *ExpressionDescriptor) getSegmentDescription(expression string,
 		// remove any leading comma
 		rangeItemDescription = strings.Replace(rangeItemDescription,", ", "",-1)
 
-		description += stringUtilities.format(ed.i18n.commaStartingX0(), rangeItemDescription)
+		description += stringUtilities.Format(ed.i18n.CommaStartingX0(), rangeItemDescription)
 	}
 	} else if doesExpressionContainRange {
 		// Range
@@ -662,7 +687,7 @@ func (ed *ExpressionDescriptor) formatTime(hourExpression string, minuteExpressi
 	period := ""
 	setPeriodBeforeTime := false
 	if !ed.options.use24HourTimeFormat {
-		setPeriodBeforeTime = ed.i18n.setPeriodBeforeTime()
+		setPeriodBeforeTime = ed.i18n.SetPeriodBeforeTime()
 		if setPeriodBeforeTime {
 			period = ed.getPeriod(hour)+" "
 		} else {
@@ -703,17 +728,17 @@ func (ed *ExpressionDescriptor) formatTime(hourExpression string, minuteExpressi
 
 func (ed *ExpressionDescriptor)  transformVerbosity(description string, useVerboseFormat bool) string {
 	if !useVerboseFormat {
-		description = strings.Replace(description,", "+ed.i18n.everyMinute(), "", -1)
-		description = strings.Replace(description,", "+ed.i18n.everyHour(), "", -1)
-		description = strings.Replace(description, ed.i18n.commaEveryDay(), "", -1)
+		description = strings.Replace(description,", "+ed.i18n.EveryMinute(), "", -1)
+		description = strings.Replace(description,", "+ed.i18n.EveryHour(), "", -1)
+		description = strings.Replace(description, ed.i18n.CommaEveryDay(), "", -1)
 
 		re := regexp.MustCompile(`\, ?$`)
 		re.ReplaceAllString(description, "")
 
 		/*
-		description = strings.Replace(description.replace(new RegExp(`, ${this.i18n.everyMinute()}`, "g"), "")
-		description = description.replace(new RegExp(`, ${this.i18n.everyHour()}`, "g"), "")
-		description = description.replace(new RegExp(this.i18n.commaEveryDay(), "g"), "")
+		description = strings.Replace(description.replace(new RegExp(`, ${this.i18n.EveryMinute()}`, "g"), "")
+		description = description.replace(new RegExp(`, ${this.i18n.EveryHour()}`, "g"), "")
+		description = description.replace(new RegExp(this.i18n.CommaEveryDay(), "g"), "")
 		description = description.replace(/\, ?$/, "")
 		 */
 	}
@@ -723,10 +748,10 @@ func (ed *ExpressionDescriptor)  transformVerbosity(description string, useVerbo
 func (ed *ExpressionDescriptor) getPeriod(hour int) string {
 
 	if hour >= 12 {
-		return ed.i18n.pm()
+		return ed.i18n.Pm()
 	}
 
-	return ed.i18n.am()
+	return ed.i18n.Am()
 
 }
 
@@ -736,15 +761,14 @@ rangeExpression string,
 getRangeDescriptionFormat stringFunction,
 getSingleItemDescription stringFunction,
 ) string {
-	var stringUtilities StringUtilities
-
+	
 	description	:= ""
 	rangeSegments := strings.Split(rangeExpression,"-")
 	rangeSegment1Description := getSingleItemDescription(rangeSegments[0])
 	rangeSegment2Description := getSingleItemDescription(rangeSegments[1])
 	rangeSegment2Description = strings.Replace(rangeSegment2Description,":00", ":59",-1)
 	rangeDescriptionFormat := getRangeDescriptionFormat(rangeExpression)
-	description += stringUtilities.format(rangeDescriptionFormat, rangeSegment1Description, rangeSegment2Description)
+	description += stringUtilities.Format(rangeDescriptionFormat, rangeSegment1Description, rangeSegment2Description)
 
 	return description
 }

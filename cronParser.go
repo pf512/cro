@@ -13,6 +13,7 @@ import (
 func main() {
 
  ex := GetExpressionDescriptor()
+ ex.Language("es")
  //ex.setVerbose(true)
  println(ex.toString("5-45/10,*/5,9 * * * *"))
 
@@ -328,9 +329,9 @@ func (parser *CronParser) normalize(expressionParts []string) error {
 
 
 func (parser *CronParser) validate(parsed []string) {
- parser.assertNoInvalidCharacters("DOW", parsed[5])
- parser.assertNoInvalidCharacters("DOM", parsed[3])
- parser.validateRange(parsed)
+   parser.assertNoInvalidCharacters("DOW", parsed[5])
+   parser.assertNoInvalidCharacters("DOM", parsed[3])
+   parser.validateRange(parsed)
 }
 
 func (parser *CronParser)  validateRange(parsed []string) error {
@@ -372,13 +373,15 @@ func (parser *CronParser)  validateRange(parsed []string) error {
 
 
 func (parser *CronParser) assertNoInvalidCharacters(partDescription string, expression string) error {
- // No characters other than 'L' or 'W' should remain after normalization
- re := regexp.MustCompile("[A-KM-VX-Z]+/gi")
- invalidChars := re.Match([]byte(expression))
 
- if invalidChars {
-  return errors.New(partDescription + " part contains invalid values: " + string(re.Find([]byte(expression))))
- }
+     // No characters other than 'L' or 'W' should remain after normalization
+     re := regexp.MustCompile("[A-KM-VX-Z]+/gi")
+     invalidChars := re.Match([]byte(expression))
 
- return nil
+     if invalidChars {
+         return errors.New(partDescription + " part contains invalid values: " + string(re.Find([]byte(expression))))
+     }
+
+     return nil
+
 }
