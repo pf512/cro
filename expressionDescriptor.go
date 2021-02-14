@@ -21,112 +21,6 @@ type ExpressionDescriptor struct {
 	i18n            i18n.Locale
 }
 
-func GetExpressionDescriptor() ExpressionDescriptor {
-	var ed ExpressionDescriptor
-	var enLocale i18n.EnLocaleLoader
-	ed.initialize(enLocale)
-
-	return ed
-}
-
-func ToString(expression string) string {
-	// We take advantage of Destructuring Object Parameters (and defaults) in TS/ES6 and now we will reassemble back to
-	// an Options type so we can pass around options with ease.
-
-	if expression == "" {
-		return ""
-	}
-
-	var ed ExpressionDescriptor
-	var enLocale i18n.EnLocaleLoader
-	ed.initialize(enLocale)
-
-	ed.expression= expression
-
-	return ed.getFullDescription()
-
-}
-
-
-func (ed *ExpressionDescriptor) initialize(localesLoader i18n.LocaleLoader) {
-	ed.specialCharacters = []string{"/", "-", ",", "*"}
-
-	throwExceptionOnParseError := true
-	verbose := false
-	dayOfWeekStartIndexZero := true
-	use24HourTimeFormat := false
-	locale := "en"
-
-	var options Options
-	options.throwExceptionOnParseError = throwExceptionOnParseError
-	options.verbose = verbose
-	options.dayOfWeekStartIndexZero = dayOfWeekStartIndexZero
-	options.use24HourTimeFormat = use24HourTimeFormat
-	options.locale = locale
-
-	ed.options = options
-
-	ed.locales = make(map[string]i18n.Locale)
-
-	// Load locales
-	localesLoader.Load(ed.locales)
-
-	ed.constructor("")
-}
-
-func (ed *ExpressionDescriptor) constructor(expression string) {
-	ed.expression = expression
-
-	if _, ok := ed.locales[ed.options.locale]; ok {
-		ed.i18n = ed.locales[ed.options.locale]
-	} else {
-		// fall back to English
-		println("Locale "+ ed.options.locale +" could not be found; falling back to 'en'")
-		ed.i18n = ed.locales["en"]
-	}
-
-	if ed.options.use24HourTimeFormat == false {
-		// if use24HourTimeFormat not specified, set based on locale default
-		ed.options.use24HourTimeFormat = ed.i18n.Use24HourTimeFormatByDefault()
-	}
-
-}
-
-func (ed *ExpressionDescriptor) Language(language string) {
-
-	ed.options.locale = language
-
-	var localesLoader i18n.LocaleLoader
-
-	if language == "es" {
-		localesLoader = i18n.EsLocaleLoader{}
-	} else {
-		return
-	}
-
-	// Load locales
-	localesLoader.Load(ed.locales)
-
-	if _, ok := ed.locales[ed.options.locale]; ok {
-		ed.i18n = ed.locales[ed.options.locale]
-	} else {
-		// fall back to English
-		println("Locale "+ ed.options.locale +" could not be found; falling back to 'en'")
-		ed.i18n = ed.locales["en"]
-	}
-
-	if ed.options.use24HourTimeFormat == false {
-		// if use24HourTimeFormat not specified, set based on locale default
-		ed.options.use24HourTimeFormat = ed.i18n.Use24HourTimeFormatByDefault()
-	}
-
-}
-
-
-func (ed *ExpressionDescriptor) setVerbose(verbose bool) {
-	ed.options.verbose = verbose
-}
-
 /**
  * Converts a cron expression into a description a human can read
  * @static
@@ -141,13 +35,104 @@ func (ed *ExpressionDescriptor) setVerbose(verbose bool) {
  *     }={}]
  * @returns {string}
  */
-
 type Options struct {
 	throwExceptionOnParseError bool
 	verbose bool
 	dayOfWeekStartIndexZero bool
 	use24HourTimeFormat bool
 	locale string
+}
+
+var (
+	ed ExpressionDescriptor
+
+	throwExceptionOnParseError = true
+	verbose = false
+	dayOfWeekStartIndexZero = true
+	use24HourTimeFormat = false
+	locale = "en"
+)
+
+func GetExpressionDescriptor() ExpressionDescriptor {
+
+	ed.initialize()
+	return ed
+}
+
+func ToString(expression string) string {
+	// We take advantage of Destructuring Object Parameters (and defaults) in TS/ES6 and now we will reassemble back to
+	// an Options type so we can pass around options with ease.
+
+	if expression == "" {
+		return ""
+	}
+
+	ed.initialize()
+	ed.expression = expression
+
+	return ed.getFullDescription()
+
+}
+
+func (ed *ExpressionDescriptor) initialize() {
+
+	ed.specialCharacters = []string{"/", "-", ",", "*"}
+
+	var options Options
+	options.throwExceptionOnParseError = throwExceptionOnParseError
+	options.verbose = verbose
+	options.dayOfWeekStartIndexZero = dayOfWeekStartIndexZero
+	options.use24HourTimeFormat = use24HourTimeFormat
+	options.locale = locale
+
+	ed.options = options
+
+	language(locale)
+}
+
+func SetLanguage(languageCode string) {
+	locale = languageCode
+}
+
+func language(language string) {
+
+	ed.locales = make(map[string]i18n.Locale)
+
+	if ed.i18n != nil {
+		return
+	}
+
+	ed.options.locale = language
+
+	var localesLoader i18n.LocaleLoader
+
+	if language == "es" {
+		localesLoader = i18n.EsLocaleLoader{}
+	} else {
+		localesLoader = i18n.EnLocaleLoader{}
+	}
+
+	// Load locales
+	localesLoader.Load(ed.locales)
+
+	if _, ok := ed.locales[ed.options.locale]; ok {
+		ed.i18n = ed.locales[ed.options.locale]
+	} else {
+		// fall back to English
+		println("locale '"+ ed.options.locale +"' could not be found; falling back to 'en'")
+		ed.i18n = ed.locales["en"]
+	}
+
+	if ed.options.use24HourTimeFormat == false {
+		// if use24HourTimeFormat not specified, set based on locale default
+		ed.options.use24HourTimeFormat = ed.i18n.Use24HourTimeFormatByDefault()
+	}
+
+}
+
+
+func (ed *ExpressionDescriptor) setVerbose(verbose bool) {
+	ed.options.verbose = verbose
 }
 
 func (ed *ExpressionDescriptor) toString(expression string) string {
@@ -188,7 +173,7 @@ func (ed *ExpressionDescriptor) getFullDescription() string {
 
 	/*catch (ex) {
 		if (!this.options.throwExceptionOnParseError) {
-			description = this.AnErrorOccuredWhenGeneratingTheExpressionD();
+			description = this.AnErrorOccurredWhenGeneratingTheExpressionD();
 		} else {
 			throw `${ex}`;
 		}
@@ -219,14 +204,14 @@ func (ed *ExpressionDescriptor) getTimeOfDayDescription() string {
 		description += ed.i18n.At()
 
 		for i := 0; i < len(hourParts); i++ {
-			description += " ";
+			description += " "
 			description += ed.formatTime(hourParts[i], minuteExpression, "")
 
-			if (i < len(hourParts) - 2) {
+			if i < len(hourParts) - 2 {
 			description += ","
 			}
 
-			if (i == len(hourParts) - 2) {
+			if i == len(hourParts) - 2 {
 			description += ed.i18n.SpaceAnd()
 			}
 		}
@@ -362,12 +347,12 @@ func (ed *ExpressionDescriptor) getDayOfWeekDescription() string {
 			},
 			func(s string) string {
 				tmpInt, _ := strconv.Atoi(s)
-				if (tmpInt == 1) {
+				if tmpInt == 1 {
 					// rather than "every 1 days" just return empty string
 					return ""
 				}
 
-				return stringUtilities.Format(ed.i18n.CommaEveryX0DaysOfTheWeek(), s);
+				return stringUtilities.Format(ed.i18n.CommaEveryX0DaysOfTheWeek(), s)
 
 			},
 			func(s string) string { return ed.i18n.CommaX0ThroughX1()},
@@ -423,7 +408,7 @@ func (ed *ExpressionDescriptor) getMonthDescription() string {
 		ed.expressionParts[4],
 		"",
 		func(s string) string {
-			tmpInt, _ := (strconv.Atoi(s))
+			tmpInt, _ := strconv.Atoi(s)
 			return monthNames[tmpInt - 1]
 		},
 		func(s string) string {
@@ -584,10 +569,10 @@ func (ed *ExpressionDescriptor) getSegmentDescription(expression string,
 	} else if expression == "*" {
 		// * (All)
 		description = allDescription
-	} else if (!doesExpressionContainIncrement && !doesExpressionContainRange && !doesExpressionContainMultipleValues) {
+	} else if !doesExpressionContainIncrement && !doesExpressionContainRange && !doesExpressionContainMultipleValues {
 		// Simple
 		description = stringUtilities.Format(getDescriptionFormat(expression), getSingleItemDescription(expression))
-	} else if (doesExpressionContainMultipleValues) {
+	} else if doesExpressionContainMultipleValues {
 		// Multiple Values
 
 		segments := strings.Split(expression, ",")
@@ -755,11 +740,11 @@ func (ed *ExpressionDescriptor)  transformVerbosity(description string, useVerbo
 		re.ReplaceAllString(description, "")
 
 		/*
-		description = strings.Replace(description.replace(new RegExp(`, ${this.i18n.EveryMinute()}`, "g"), "")
-		description = description.replace(new RegExp(`, ${this.i18n.EveryHour()}`, "g"), "")
-		description = description.replace(new RegExp(this.i18n.CommaEveryDay(), "g"), "")
-		description = description.replace(/\, ?$/, "")
-		 */
+			description = strings.Replace(description.replace(new RegExp(`, ${this.i18n.EveryMinute()}`, "g"), "")
+			description = description.replace(new RegExp(`, ${this.i18n.EveryHour()}`, "g"), "")
+			description = description.replace(new RegExp(this.i18n.CommaEveryDay(), "g"), "")
+			description = description.replace(/\, ?$/, "")
+		*/
 	}
 	return description
 }

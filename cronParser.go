@@ -13,7 +13,6 @@ import (
 func main() {
 
  ex := GetExpressionDescriptor()
- ex.Language("es")
  //ex.setVerbose(true)
  println(ex.toString("5-45/10,*/5,9 * * * *"))
 
