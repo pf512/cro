@@ -1,10 +1,10 @@
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/join
 // https://www.typescriptlang.org/play?#code/PTAEHUFMBsGMHsC2lQBd5oBYoCoE8AHSAZVgCcBLA1UABWgEM8BzM+AVwDsATAGiwoBnUENANQAd0gAjQRVSQAUCEmYKsTKGYUAbpGF4OY0BoadYKdJMoL+gzAzIoz3UNEiPOofEVKVqAHSKymAAmkYI7NCuqGqcANag8ABmIjQUXrFOKBJMggBcISGgoAC0oACCoASMFmgY7p7ehCTkVOle4jUMdRLYTqCc8LEZzCZmoNJODPHFZZXVtZYYkAAeRJTInDQS8po+rf40gnjbDKv8LqD2jpbYoACqAEoAMsK7sUmxkGSCc+VVQQuaTwVb1UBrDYULY7PagbgUZLJH6QbYmJAECjuMigZEMVDsJzCFLNXxtajBBCcQQ0MwAUVWDEQNUgADVHBQGNJ3KAALygABEAAkYNAMOB4GRogLFFTBPB3AExcwABT0xnM9zsyhc9wASmCKhwDQ8ZC8iElzhB7Bo3zcZmY7AYzEg-Fg0HUiS58D0Ii8AoZTJZggFSRxAvADlQAHJhAA5SASAVBFQAeW+ZF2gldWkgx1QjgUrmkeFATgtOlGWH0KAQiBhwiudokkuiIgMHBx3RYbC43CCJRKOkc8Ly+VAAG9QABteKQPDjmmUTjMAC64847EQ0h+oAAvnzJ4pB4PiA84+OAAy8Y8n0AAWVTF9AAEYb3fvA86eOAEzvu-gHSAAi44AMz-ieOBCg844ACwQYOABiTwAJLjgArAhJTEBUODjgAbAhe4ANy3iUySSqAKruDQ3BMH6o54IIepHh+coKpASrwKqdF4AaJ57kAA
-package main
+package cronutils
 
 import (
-	"awesomeProject/i18n"
-	"awesomeProject/stringUtilities"
+	"github.com/pf512/cro/i18n"
+	"github.com/pf512/cro/stringUtilities"
 	"regexp"
 	"strconv"
 	"strings"
@@ -28,6 +28,25 @@ func GetExpressionDescriptor() ExpressionDescriptor {
 
 	return ed
 }
+
+func ToString(expression string) string {
+	// We take advantage of Destructuring Object Parameters (and defaults) in TS/ES6 and now we will reassemble back to
+	// an Options type so we can pass around options with ease.
+
+	if expression == "" {
+		return ""
+	}
+
+	var ed ExpressionDescriptor
+	var enLocale i18n.EnLocaleLoader
+	ed.initialize(enLocale)
+
+	ed.expression= expression
+
+	return ed.getFullDescription()
+
+}
+
 
 func (ed *ExpressionDescriptor) initialize(localesLoader i18n.LocaleLoader) {
 	ed.specialCharacters = []string{"/", "-", ",", "*"}
