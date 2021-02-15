@@ -164,8 +164,8 @@ func (parser *CronParser) normalize(expressionParts []string) error {
  // Adjust DOW based on dayOfWeekStartIndexZero option
  // Normalized DOW: 0=Sunday/6=Saturday
 
- re2 := regexp.MustCompile(`(^\d)|([^#\s]\d)`)
- //fmt.Printf("%q\n", re2.FindAllString(expressionParts[5], 1)) //TODO
+ re2 := regexp.MustCompile(`(^\d)|([^#/\s]\d)`)
+ // skip anything preceeded by # or /
  t := re2.FindAllString(expressionParts[5], -1)
 
  index :=0
