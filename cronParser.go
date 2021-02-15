@@ -164,18 +164,19 @@ func (parser *CronParser) normalize(expressionParts []string) error {
  // Adjust DOW based on dayOfWeekStartIndexZero option
  // Normalized DOW: 0=Sunday/6=Saturday
 
- re2 := regexp.MustCompile(`(^\d)|([^#/\s]\d)`)
+ re2 := regexp.MustCompile(`(^\d)|([^#\s]\d)`)
  //fmt.Printf("%q\n", re2.FindAllString(expressionParts[5], 1)) //TODO
  t := re2.FindAllString(expressionParts[5], -1)
 
- for _, found := range t {
+ index :=0
+ for _,_ = range t {
 
     re3 := regexp.MustCompile(`\D`)
-    dowDigits := string(re3.ReplaceAll([]byte(t[0]), []byte("")))
+    dowDigits := string(re3.ReplaceAll([]byte(t[index]), []byte("")))
     dowDigitsAdjusted := dowDigits
 
-    dayOfWeekStartIndexZero := true
-    if dayOfWeekStartIndexZero {
+    //dayOfWeekStartIndexZero := true
+    if parser.dayOfWeekStartIndexZero {
      // "7" also means Sunday so we will convert to "0" to normalize it
      if dowDigits == "7" {
       dowDigitsAdjusted = "0"
@@ -187,8 +188,9 @@ func (parser *CronParser) normalize(expressionParts []string) error {
      dowDigitsAdjusted = strconv.Itoa(intToString - 1)
     }
 
-    expressionParts[5] = strings.Replace(expressionParts[5], found, dowDigitsAdjusted, 1)
+    expressionParts[5] = strings.Replace(expressionParts[5], dowDigits, dowDigitsAdjusted, 1)
 
+    index++
  }
 
 

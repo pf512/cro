@@ -131,8 +131,20 @@ func language(language string) {
 }
 
 
-func (ed *ExpressionDescriptor) setVerbose(verbose bool) {
-	ed.options.verbose = verbose
+func SetVerboseOn() {
+	verbose = true
+}
+
+func SetVerboseOff() {
+	verbose = false
+}
+
+func SetDayOfWeekStartIndexZeroTrue() {
+	dayOfWeekStartIndexZero = true
+}
+
+func SetDayOfWeekStartIndexZeroFalse() {
+	dayOfWeekStartIndexZero = false
 }
 
 func (ed *ExpressionDescriptor) toString(expression string) string {
@@ -359,7 +371,7 @@ func (ed *ExpressionDescriptor) getDayOfWeekDescription() string {
 			func(s string) string {
 				format := ""
 				if strings.Index(s,"#") > -1 {
-					dayOfWeekOfMonthNumber := s[:(strings.Index(s,"#") + 1)]
+					dayOfWeekOfMonthNumber := s[(strings.Index(s,"#") + 1):]
 					dayOfWeekOfMonthDescription := ""
 					switch dayOfWeekOfMonthNumber {
 						case "1":
@@ -448,8 +460,7 @@ func (ed *ExpressionDescriptor) getDayOfMonthDescription() string {
 		case "L":
 			description = ed.i18n.CommaOnTheLastDayOfTheMonth()
 			break
-		case "WL":
-		case "LW":
+		case "WL", "LW":
 			description = ed.i18n.CommaOnTheLastWeekdayOfTheMonth()
 			break
 		default:
@@ -471,8 +482,8 @@ func (ed *ExpressionDescriptor) getDayOfMonthDescription() string {
 				break
 			} else {
 				// Handle "last day offset" (i.e. L-5:  "5 days before the last day of the month")
-				re := regexp.MustCompile("L-(\\d{1,2})")
-				lastDayOffSetMatches := re.FindAllString(expression, -1)
+				re := regexp.MustCompile(`L-(\d{1,2})`)
+				lastDayOffSetMatches := re.FindStringSubmatch(expression)
 				if len(lastDayOffSetMatches) > 0 {
 					offSetDays := lastDayOffSetMatches[1]
 					description = stringUtilities.Format(ed.i18n.CommaDaysBeforeTheLastDayOfTheMonth(), offSetDays)
