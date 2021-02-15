@@ -53,15 +53,7 @@ var (
 	locale = "en"
 )
 
-func GetExpressionDescriptor() ExpressionDescriptor {
-
-	ed.initialize()
-	return ed
-}
-
 func ToString(expression string) string {
-	// We take advantage of Destructuring Object Parameters (and defaults) in TS/ES6 and now we will reassemble back to
-	// an Options type so we can pass around options with ease.
 
 	if expression == "" {
 		return ""
@@ -130,7 +122,6 @@ func language(language string) {
 
 }
 
-
 func SetVerboseOn() {
 	verbose = true
 }
@@ -160,7 +151,6 @@ func (ed *ExpressionDescriptor) toString(expression string) string {
 	return ed.getFullDescription()
 
 }
-
 
 func (ed *ExpressionDescriptor) getFullDescription() string {
 
@@ -698,6 +688,7 @@ func (ed *ExpressionDescriptor) getSegmentDescription(expression string,
 }
 
 func (ed *ExpressionDescriptor) formatTime(hourExpression string, minuteExpression string, secondExpression string) string {
+
 	hour,_ := strconv.Atoi(hourExpression)
 	period := ""
 	setPeriodBeforeTime := false
@@ -718,7 +709,6 @@ func (ed *ExpressionDescriptor) formatTime(hourExpression string, minuteExpressi
 		hour = 12
 	}
 
-	//minute := minuteExpression
 	second := ""
 	if secondExpression != "" {
 		second = ":"+("00" + secondExpression)[len(secondExpression):]
@@ -741,21 +731,16 @@ func (ed *ExpressionDescriptor) formatTime(hourExpression string, minuteExpressi
 
 }
 
-func (ed *ExpressionDescriptor)  transformVerbosity(description string, useVerboseFormat bool) string {
+func (ed *ExpressionDescriptor) transformVerbosity(description string, useVerboseFormat bool) string {
+
 	if !useVerboseFormat {
 		description = strings.Replace(description,", "+ed.i18n.EveryMinute(), "", -1)
 		description = strings.Replace(description,", "+ed.i18n.EveryHour(), "", -1)
 		description = strings.Replace(description, ed.i18n.CommaEveryDay(), "", -1)
 
-		re := regexp.MustCompile(`\, ?$`)
+		re := regexp.MustCompile(`, ?$`)
 		re.ReplaceAllString(description, "")
 
-		/*
-			description = strings.Replace(description.replace(new RegExp(`, ${this.i18n.EveryMinute()}`, "g"), "")
-			description = description.replace(new RegExp(`, ${this.i18n.EveryHour()}`, "g"), "")
-			description = description.replace(new RegExp(this.i18n.CommaEveryDay(), "g"), "")
-			description = description.replace(/\, ?$/, "")
-		*/
 	}
 	return description
 }
@@ -769,7 +754,6 @@ func (ed *ExpressionDescriptor) getPeriod(hour int) string {
 	return ed.i18n.Am()
 
 }
-
 
 func (ed *ExpressionDescriptor) generateRangeSegmentDescription(
 rangeExpression string,

@@ -9,13 +9,6 @@ import (
  "strings"
 )
 
-func main() {
-
- ex := GetExpressionDescriptor()
- //ex.setVerbose(true)
- println(ex.toString("5-45/10,*/5,9 * * * *"))
-
-}
 
 /**
  * Parses and normalizes a cron expression
