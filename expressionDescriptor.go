@@ -167,7 +167,7 @@ func (ed *ExpressionDescriptor) getFullDescription() string {
 	description := ""
 
 	parser := GetCronParser(ed.expression, ed.options.dayOfWeekStartIndexZero)
-	ed.expressionParts = parser.parse()
+	ed.expressionParts, _ = parser.parse()
 
 	timeSegment := ed.getTimeOfDayDescription()
 	dayOfMonthDesc := ed.getDayOfMonthDescription()

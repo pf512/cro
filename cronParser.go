@@ -4,7 +4,6 @@ package cronutils
 
 import (
  "errors"
- "os"
  "regexp"
  "strconv"
  "strings"
@@ -45,19 +44,19 @@ func GetCronParser(expression string, dayOfWeekStartIndexZero bool) CronParser {
  * Parses and normalizes a cron expression into an array of strings
  * @returns {string[]}
  */
-func (parser *CronParser) parse() []string {
+func (parser *CronParser) parse() ([]string, error) {
 
  parsed, err := parser.extractParts(parser.expression)
 
  if err != nil {
-  println("cronParser parse")
-  os.Exit(1)
+   println("cronParser parse")
+   return parsed, err
  }
 
  parser.normalize(parsed)
  parser.validate(parsed)
 
- return parsed
+ return parsed, err
 }
 
 func (parser *CronParser) extractParts(expression string) ([]string, error) {

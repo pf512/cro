@@ -840,3 +840,158 @@ func TestEveryHourMondayThruSat(t *testing.T) {
 		t.Fatalf(`ToString(%s) = %s, received = %s`, testString, expected, received)
 	}
 }
+
+
+func Test001(t *testing.T) {
+
+	testString := "*/5 15 * * MON-FRI"
+	expected := "Every 5 minutes, between 03:00 PM and 03:59 PM, Monday through Friday"
+
+	received := ToString(testString)
+	if received != expected {
+		t.Fatalf(`ToString(%s) = %s, received = %s`, testString, expected, received)
+	}
+}
+
+func Test002(t *testing.T) {
+
+	testString := "* * * * MON#3"
+	expected := "Every minute, on the third Monday of the month"
+
+	received := ToString(testString)
+	if received != expected {
+		t.Fatalf(`ToString(%s) = %s, received = %s`, testString, expected, received)
+	}
+}
+
+func Test003(t *testing.T) {
+
+	testString := "5-10 * * * * *"
+	expected := "Seconds 5 through 10 past the minute"
+
+	received := ToString(testString)
+	if received != expected {
+		t.Fatalf(`ToString(%s) = %s, received = %s`, testString, expected, received)
+	}
+}
+
+func Test004(t *testing.T) {
+
+	testString := "5-10 30-35 10-12 * * *"
+	expected := "Seconds 5 through 10 past the minute, minutes 30 through 35 past the hour, between 10:00 AM and 12:59 PM"
+
+	received := ToString(testString)
+	if received != expected {
+		t.Fatalf(`ToString(%s) = %s, received = %s`, testString, expected, received)
+	}
+}
+
+func Test005(t *testing.T) {
+
+	testString := "30 */5 * * * *"
+	expected := "At 30 seconds past the minute, every 5 minutes"
+
+	received := ToString(testString)
+	if received != expected {
+		t.Fatalf(`ToString(%s) = %s, received = %s`, testString, expected, received)
+	}
+}
+
+func Test006(t *testing.T) {
+
+	testString := "10 0/5 * * * ?"
+	expected := "At 10 seconds past the minute, every 5 minutes"
+
+	received := ToString(testString)
+	if received != expected {
+		t.Fatalf(`ToString(%s) = %s, received = %s`, testString, expected, received)
+	}
+}
+
+func Test007(t *testing.T) {
+
+	testString := "2-59/3 1,9,22 11-26 1-6 ?"
+	expected := "Every 3 minutes, minutes 2 through 59 past the hour, at 01:00 AM, 09:00 AM, and 10:00 PM, between day 11 and 26 of the month, January through June"
+
+	received := ToString(testString)
+	if received != expected {
+		t.Fatalf(`ToString(%s) = %s, received = %s`, testString, expected, received)
+	}
+}
+
+func Test008(t *testing.T) {
+
+	testString := "23 12 * JAN-FEB * 2013-2014"
+	expected := "At 12:23 PM, January through February, 2013 through 2014"
+
+	received := ToString(testString)
+	if received != expected {
+		t.Fatalf(`ToString(%s) = %s, received = %s`, testString, expected, received)
+	}
+}
+
+func Test009(t *testing.T) {
+
+	testString := "23 12 * JAN-MAR * 2013-2015"
+	expected := "At 12:23 PM, January through March, 2013 through 2015"
+
+	received := ToString(testString)
+	if received != expected {
+		t.Fatalf(`ToString(%s) = %s, received = %s`, testString, expected, received)
+	}
+}
+
+func Test010(t *testing.T) {
+
+	testString := "12-50 0-10 6 * * * 2022"
+	expected := "Seconds 12 through 50 past the minute, minutes 0 through 10 past the hour, at 06:00 AM, only in 2022"
+
+	received := ToString(testString)
+	if received != expected {
+		t.Fatalf(`ToString(%s) = %s, received = %s`, testString, expected, received)
+	}
+}
+
+func Test011(t *testing.T) {
+
+	testString := "0 0/30 8-9 5,20 * ?"
+	expected := "Every 30 minutes, between 08:00 AM and 09:59 AM, on day 5 and 20 of the month"
+
+	received := ToString(testString)
+	if received != expected {
+		t.Fatalf(`ToString(%s) = %s, received = %s`, testString, expected, received)
+	}
+}
+
+func Test012(t *testing.T) {
+
+	testString := "23 12 * * SUN#2"
+	expected := "At 12:23 PM, on the second Sunday of the month"
+
+	received := ToString(testString)
+	if received != expected {
+		t.Fatalf(`ToString(%s) = %s, received = %s`, testString, expected, received)
+	}
+}
+
+func Test013(t *testing.T) {
+
+	testString := "0 25 7-19/8 ? * *"
+	expected := "At 25 minutes past the hour, every 8 hours, between 07:00 AM and 07:59 PM"
+
+	received := ToString(testString)
+	if received != expected {
+		t.Fatalf(`ToString(%s) = %s, received = %s`, testString, expected, received)
+	}
+}
+
+func Test014(t *testing.T) {
+
+	testString := "0 25 7-20/13 ? * *"
+	expected := "At 25 minutes past the hour, every 13 hours, between 07:00 AM and 08:59 PM"
+
+	received := ToString(testString)
+	if received != expected {
+		t.Fatalf(`ToString(%s) = %s, received = %s`, testString, expected, received)
+	}
+}
